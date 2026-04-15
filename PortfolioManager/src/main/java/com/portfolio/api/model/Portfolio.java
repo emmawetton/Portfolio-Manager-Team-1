@@ -7,9 +7,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Data;
 import java.util.List;
 
-
+@Data
 @Entity
 @Table(name = "portfolios")
 public class Portfolio {
