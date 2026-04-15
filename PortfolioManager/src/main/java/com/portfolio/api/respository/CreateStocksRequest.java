@@ -1,4 +1,4 @@
-package com.portfolio.api.dto;
+package com.portfolio.api.respository;
 
 public class CreateStocksRequest {
     
