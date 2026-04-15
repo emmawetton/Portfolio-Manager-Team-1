@@ -1,4 +1,4 @@
-package com.training.banking;
+package com.portfolio.api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
