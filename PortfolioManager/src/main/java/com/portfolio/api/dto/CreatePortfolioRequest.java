@@ -1,4 +1,4 @@
-package com.portfolio.api.respository;
+package com.portfolio.api.dto;
 
 public class CreatePortfolioRequest {
     
