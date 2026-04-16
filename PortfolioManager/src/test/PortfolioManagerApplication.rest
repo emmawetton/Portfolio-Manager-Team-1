@@ -1,0 +1,209 @@
+### ===========================
+### PORTFOLIO ENDPOINTS
+### ===========================
+
+### Create a new portfolio
+### Expected: 201 Created
+### Returns: portfolio object with id, name, description, createdDate, numberOfStocks=0, totalValue=0
+POST http://localhost:8080/api/portfolios
+Content-Type: application/json
+
+{
+    "name": "Tech Stocks",
+    "description": "My technology investments"
+}
+
+###
+
+### Create a second portfolio
+### Expected: 201 Created
+### Returns: portfolio object with id=2
+POST http://localhost:8080/api/portfolios
+Content-Type: application/json
+
+{
+    "name": "Dividend Stocks",
+    "description": "Long term dividend investments"
+}
+
+###
+
+### Get all portfolios
+### Expected: 200 OK
+### Returns: list of all portfolios
+GET http://localhost:8080/api/portfolios
+
+###
+
+### Get portfolio by id
+### Expected: 200 OK
+### Returns: single portfolio object with id=1
+GET http://localhost:8080/api/portfolios/1
+
+###
+
+### Get portfolio that does not exist
+### Expected: 404 Not Found
+### Returns: { "status": 404, "message": "Portfolio not found with id: 999", "timestamp": "..." }
+GET http://localhost:8080/api/portfolios/999
+
+###
+
+### Update a portfolio
+### Expected: 200 OK
+### Returns: updated portfolio object with new name
+PUT http://localhost:8080/api/portfolios/1
+Content-Type: application/json
+
+{
+    "name": "Tech Giants",
+    "description": "Updated description"
+}
+
+###
+
+### Try to create portfolio with empty name
+### Expected: 400 Bad Request
+### Returns: { "status": 400, "message": "Portfolio name cannot be empty", "timestamp": "..." }
+POST http://localhost:8080/api/portfolios
+Content-Type: application/json
+
+{
+    "name": "",
+    "description": "This should fail"
+}
+
+###
+
+### ===========================
+### STOCK ENDPOINTS
+### ===========================
+
+### Add Apple stock to portfolio 1
+### Expected: 201 Created
+### Returns: stock object with id, name=AAPL, symbol=AAPL, quantity=10, purchasePrice=189.50
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    
+    "symbol": "AAPL",
+    "quantity": 10,
+    "purchasePrice": 189.50,
+    "purchaseDate": "2024-01-15"
+}
+
+###
+
+### Add Tesla stock to portfolio 1
+### Expected: 201 Created
+### Returns: stock object with id=2
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "TSLA",
+    "quantity": 5,
+    "purchasePrice": 220.00,
+    "purchaseDate": "2024-01-20"
+}
+
+###
+
+### Add Google stock to portfolio 2
+### Expected: 201 Created
+### Returns: stock object with id=3, portfolioId=2
+POST http://localhost:8080/api/portfolios/2/stocks
+Content-Type: application/json
+
+{
+    "symbol": "GOOGL",
+    "quantity": 3,
+    "purchasePrice": 140.00,
+    "purchaseDate": "2024-02-01"
+}
+
+###
+
+### Get all stocks in portfolio 1
+### Expected: 200 OK
+### Returns: list containing Apple and Tesla stocks
+GET http://localhost:8080/api/portfolios/1/stocks
+
+###
+
+### Get all stocks in portfolio 2
+### Expected: 200 OK
+### Returns: list containing only Google stock
+GET http://localhost:8080/api/portfolios/2/stocks
+
+###
+
+### Get one stock by id
+### Expected: 200 OK
+### Returns: Apple stock object
+GET http://localhost:8080/api/portfolios/1/stocks/1
+
+###
+
+### Try to get stock from wrong portfolio
+### Expected: 404 Not Found
+### Returns: { "status": 404, "message": "Stock does not belong to portfolio with id: 1", "timestamp": "..." }
+GET http://localhost:8080/api/portfolios/1/stocks/3
+
+###
+
+### Update a stock
+### Expected: 200 OK
+### Returns: updated stock with quantity=20
+PUT http://localhost:8080/api/portfolios/1/stocks/1
+Content-Type: application/json
+
+{
+    "quantity": 20,
+    "purchasePrice": 189.50
+}
+
+###
+
+### Try to add stock with negative quantity
+### Expected: 400 Bad Request
+### Returns: { "status": 400, "message": "Quantity must be greater than zero", "timestamp": "..." }
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "AMZN",
+    "quantity": -5,
+    "purchasePrice": 150.00,
+    "purchaseDate": "2024-01-15"
+}
+
+###
+
+### Try to add stock with missing symbol
+### Expected: 400 Bad Request
+### Returns: { "status": 400, "message": "Stock symbol cannot be empty", "timestamp": "..." }
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "",
+    "quantity": 5,
+    "purchasePrice": 150.00,
+    "purchaseDate": "2024-01-15"
+}
+
+###
+
+### Delete a stock
+### Expected: 204 No Content
+### Returns: empty response
+DELETE http://localhost:8080/api/portfolios/1/stocks/2
+
+###
+
+### Delete a portfolio (also deletes all its stocks due to cascade)
+### Expected: 204 No Content
+### Returns: empty response
+DELETE http://localhost:8080/api/portfolios/2
