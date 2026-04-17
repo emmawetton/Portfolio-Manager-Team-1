@@ -134,7 +134,7 @@ async function addStock() {
     setButtonLoading('addStockBtn', true, 'Adding...');
 
     try {
-        await addStock_API(portfolioId, symbol, quantity, purchasePrice, purchaseDate);
+        await addStockAPI(portfolioId, symbol, quantity, purchasePrice, purchaseDate);
 
         // Clear inputs
         document.getElementById('stockSymbol').value = '';
