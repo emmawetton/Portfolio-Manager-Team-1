@@ -8,6 +8,8 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.Data;
+import jakarta.persistence.CascadeType;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -18,37 +20,17 @@ public class Portfolio {
     @Id 
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private int id;
+    private Long id;
 
     private String name;
+    private String description;
+    private LocalDate createdDate;
 
-    @OneToMany
-    private List<Stocks> stocks;
+    @OneToMany(mappedBy = "portfolio", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Stock> stocks;
     
     // methods
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public List<Stocks> getStocks() {
-        return stocks;
-    }
-
-    public void setStocks(List<Stocks> stocks) {
-        this.stocks = stocks;
-    }
+   
 }
 
