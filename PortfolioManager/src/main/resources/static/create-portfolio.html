@@ -4,9 +4,12 @@
     <link rel="stylesheet" href="css/styles.css">
   </head>
   <body>
-    <button onclick="goBackToUser()">Back</button>
+    <div class="page-header">
+      <button class="back-btn" onclick="goBackToUser()">Back</button>
+      <h1>Create New or View Existing Portfolios</h1>
+      <h2>Hello, <span id="usernameDisplay"></span></h2>
+    </div>
     
-    <h1>Hello, <span id="usernameDisplay"></span></h1>
     
     <h2>Your Existing Portfolios</h2>
     <div id="portfolioList" class="portfolio-list"></div>

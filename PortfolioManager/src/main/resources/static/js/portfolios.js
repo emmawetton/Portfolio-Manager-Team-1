@@ -63,7 +63,13 @@ function openPortfolio(name) {
 }
 
 function deletePortfolio(index) {
-    let portfolios = JSON.parse(localStorage.getItem("portfolios")) || [];
+    const portfolios = JSON.parse(localStorage.getItem("portfolios")) || [];
+    const portfolioName = portfolios[index];
+
+    const confirmed = confirm(`Are you sure you want to delete the portfolio "${portfolioName}"? This action cannot be undone.`);
+
+    if (!confirmed) return;
+    
     portfolios.splice(index, 1);
     localStorage.setItem("portfolios", JSON.stringify(portfolios));
 

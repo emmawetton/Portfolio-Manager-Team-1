@@ -4,29 +4,54 @@
     <link rel="stylesheet" href="css/styles.css">
   </head>
 <body>
-  <button onclick="goBackToPortfolios()">Back</button>
+  <div class="container">
+
+  <div class="page-header">
+    <h2>Currently Viewing: <span id="portfolioName"></span></h2>
+    <button class="back-btn" onclick="goBackToPortfolios()">Back</button>
+  </div>
   
-   <div class="container">
-        <h2>Stocks for <span id="portfolioName"></span></h2>
+  <!-- TAB BUTTONS -->
+  <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('managerTab')">Manager</button>
+      <button class="tab-btn" onclick="showTab('addStockTab')">Add Stock</button>
+  </div>
+
+  <!-- MANAGER TAB -->
+  <div id="managerTab" class="tab-content active">
+    <h3>Your Stocks</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Stock</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th>Purchase Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="stockTable"></tbody>
+    </table>
+  </div>
+
+  <!-- ADD STOCK TAB -->
+    <div id="addStockTab" class="tab-content">
+        <h3>Add New Stock</h3>
 
         <div class="form-row">
             <input id="stockName" type="text" placeholder="Stock Name">
             <input id="purchasePrice" type="number" placeholder="Purchase Price">
-            <button onclick="addStock()">Add</button>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Stock</th>
-                    <th>Purchase Price</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="stockTable"></tbody>
-        </table>
+        <div class="form-row">
+            <input id="quantity" type="number" placeholder="Quantity">
+            <input id="purchaseDate" type="date">
+        </div>
+
+        <button onclick="addStock()">Add Stock</button>
     </div>
-  
+  </div>
   <script src="js/stocks.js"></script>
 </body>
 
