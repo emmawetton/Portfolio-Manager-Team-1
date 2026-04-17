@@ -1,0 +1,52 @@
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+/* ------------------------------
+   PORTFOLIO CARDS
+------------------------------ */
+
+.portfolio-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.portfolio-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 18px 22px;
+    border-radius: 10px;
+    border: 1px solid #d9d9d9;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    transition: all 0.2s ease;
+}
+
+.portfolio-card:hover {
+    border-color: #0078ff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.10);
+    transform: translateY(-2px);
+}
+
+.portfolio-info h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #333;
+    font-weight: 600;
+}
+
+/* .portfolio-actions {
+    display: flex;
+    gap: 10px;
+} */
+
+/* .empty-msg {
+    color: #777;
+    font-style: italic;
+    margin-top: 10px;
+} */
