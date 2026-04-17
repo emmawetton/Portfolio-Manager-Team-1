@@ -1,5 +1,6 @@
 package com.portfolio.api.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import jakarta.persistence.Column;
@@ -28,9 +29,18 @@ public class Stock {
     private LocalDate purchaseDate; 
     private String shortTicketCode;
 
+    // Many-to-one relationship with Portfolio, with a join column named "portfolio_id" 
+    // which is a foreign key referencing the Portfolio entity.
+    // This means that each Stock is associated with one Portfolio, 
+    // and the portfolio_id column in the Stocks table will store the ID of the associated Portfolio.
+    // The @ManyToOne annotation indicates that many Stock entities can be associated with one Portfolio entity,
+    // and the @JoinColumn annotation specifies the name of the foreign key column in the Stocks table that references the Portfolio entity.
     @ManyToOne
     @JoinColumn(name = "portfolio_id")
     private Portfolio portfolio;
+
+    private BigDecimal lastKnownPrice;
+    private LocalDate lastPriceUpdated;
 
 
 }

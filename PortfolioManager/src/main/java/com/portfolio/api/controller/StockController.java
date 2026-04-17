@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.portfolio.api.dto.StockTrendResponse;
+import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 
 @RestController
@@ -26,13 +28,23 @@ public class StockController {
         return ResponseEntity.ok(stockService.getStockById(portfolioId, stockId));
     }
 
+    @GetMapping("/{stockId}/trends")
+    public ResponseEntity<StockTrendResponse> getStockTrends(
+            @PathVariable Long portfolioId,
+            @PathVariable Long stockId,
+            @RequestParam(defaultValue = "6") int months) {
+        return ResponseEntity.ok(stockService.getStockTrends(portfolioId, stockId, months));
+    }
+
     @PostMapping
-    public ResponseEntity<StockResponse> addStock(@PathVariable Long portfolioId, @Valid @RequestBody CreateStockRequest request) {
+    public ResponseEntity<StockResponse> addStock(@PathVariable Long portfolioId,
+            @Valid @RequestBody CreateStockRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(stockService.addStock(portfolioId, request));
     }
 
     @PutMapping("/{stockId}")
-    public ResponseEntity<StockResponse> updateStock(@PathVariable Long portfolioId, @PathVariable Long stockId, @Valid @RequestBody UpdateStockRequest request) {
+    public ResponseEntity<StockResponse> updateStock(@PathVariable Long portfolioId, @PathVariable Long stockId,
+            @Valid @RequestBody UpdateStockRequest request) {
         return ResponseEntity.ok(stockService.updateStock(portfolioId, stockId, request));
     }
 

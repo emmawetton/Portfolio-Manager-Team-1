@@ -7,6 +7,7 @@ import com.portfolio.api.repository.PortfolioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 public class PortfolioService {
 
     private final PortfolioRepository portfolioRepository;
+    private final StockService stockService;
 
     public List<PortfolioSummaryResponse> getAllPortfolios() {
         return portfolioRepository.findAll()
@@ -60,11 +62,37 @@ public class PortfolioService {
         response.setName(portfolio.getName());
         response.setDescription(portfolio.getDescription());
         response.setCreatedDate(portfolio.getCreatedDate());
-        response.setNumberOfStocks(portfolio.getStocks() == null ? 0 : portfolio.getStocks().size());
-        response.setTotalValue(BigDecimal.ZERO);
-        response.setTotalProfitLoss(BigDecimal.ZERO);
-        response.setTotalProfitLossPercentage(0.0);
-        response.setStocks(List.of());
+
+        // Get all stocks with live prices
+        List<StockResponse> stocks = stockService.getAllStocks(portfolio.getId());
+        response.setStocks(stocks);
+        response.setNumberOfStocks(stocks.size());
+
+        // Calculate portfolio totals
+        BigDecimal totalValue = stocks.stream()
+                .map(StockResponse::getCurrentValue)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalCost = stocks.stream()
+                .map(s -> BigDecimal.valueOf(s.getPurchasePrice())
+                        .multiply(BigDecimal.valueOf(s.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalProfitLoss = totalValue.subtract(totalCost);
+
+        Double totalProfitLossPercentage = 0.0;
+        if (totalCost.compareTo(BigDecimal.ZERO) > 0) {
+            totalProfitLossPercentage = totalProfitLoss
+                    .divide(totalCost, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .doubleValue();
+            totalProfitLossPercentage = Math.round(totalProfitLossPercentage * 100.0) / 100.0;
+        }
+
+        response.setTotalValue(totalValue.setScale(2, RoundingMode.HALF_UP));
+        response.setTotalProfitLoss(totalProfitLoss.setScale(2, RoundingMode.HALF_UP));
+        response.setTotalProfitLossPercentage(totalProfitLossPercentage);
+
         return response;
     }
 }
