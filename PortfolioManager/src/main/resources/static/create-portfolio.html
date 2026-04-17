@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+  <body>
+    <button onclick="goBackToUser()">Back</button>
+    
+    <h1>Hello, <span id="usernameDisplay"></span></h1>
+    
+    <h2>Your Existing Portfolios</h2>
+    <div id="portfolioList" class="portfolio-list"></div>
+    
+    <hr>
+
+
+    <h2>Create a New Portfolio</h2>
+    <div class="container">
+      <input id="portfolioName" type="text" placeholder="Portfolio Name">
+      <button onclick="createPortfolio()">Create New Portfolio</button>
+    </div>
+    <!-- <script src="js/api.js"></script> -->
+    <script src="js/portfolios.js"></script>
+  </body>
+</html>

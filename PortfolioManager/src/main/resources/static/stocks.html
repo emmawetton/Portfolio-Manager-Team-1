@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="css/styles.css">
+  </head>
+<body>
+  <button onclick="goBackToPortfolios()">Back</button>
+  
+   <div class="container">
+        <h2>Stocks for <span id="portfolioName"></span></h2>
+
+        <div class="form-row">
+            <input id="stockName" type="text" placeholder="Stock Name">
+            <input id="purchasePrice" type="number" placeholder="Purchase Price">
+            <button onclick="addStock()">Add</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Stock</th>
+                    <th>Purchase Price</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="stockTable"></tbody>
+        </table>
+    </div>
+  
+  <script src="js/stocks.js"></script>
+</body>
+
+</html>
