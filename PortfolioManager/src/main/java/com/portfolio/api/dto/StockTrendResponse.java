@@ -1,10 +1,13 @@
 package com.portfolio.api.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public class StockTrendResponse {
 
     private String symbol;
@@ -12,13 +15,10 @@ public class StockTrendResponse {
     private List<TrendPoint> trends;
 
     @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class TrendPoint {
         private String date;
         private BigDecimal price;
-
-        public TrendPoint(String date, BigDecimal price) {
-            this.date = date;
-            this.price = price;
-        }
     }
 }
