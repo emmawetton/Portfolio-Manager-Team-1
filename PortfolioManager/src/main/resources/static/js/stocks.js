@@ -1,52 +1,39 @@
+let tempStock = {};
 
 if (window.location.pathname.includes("stocks.html")) {
-    const portfolio = localStorage.getItem("portfolio");
-    document.getElementById("portfolioName").innerText = portfolio || "Unknown Portfolio";
+    const username = localStorage.getItem("username") || "User";
+    const portfolio = localStorage.getItem("portfolio") || "Portfolio";
 
-    let allStocks = JSON.parse(localStorage.getItem("stocks")) || {};
-    let portfolioStocks = allStocks[portfolio] || [];
-
-    portfolioStocks.forEach(stock => {
-        addStockRow(stock.stockName, stock.purchasePrice, stock.quantity, stock.purchaseDate);
-    });   
+    document.getElementById("usernameDisplay").innerText = username;
+    document.getElementById("portfolioDisplay").innerText = portfolio;
 }
 
 // Add purchase to table
 function addStock() {
-    const stockName = document.getElementById("stockName").value;
-    const purchasePrice = document.getElementById("purchasePrice").value;
-    const quantity = document.getElementById("quantity").value;
-    const purchaseDate = document.getElementById("purchaseDate").value;
-
-    if (!stockName || !purchasePrice || !quantity || !purchaseDate) 
-        return alert("Please fill in all fields");
-    
     const portfolio = localStorage.getItem("portfolio");
-    // Load existing stocks for this portfolio
+
     let allStocks = JSON.parse(localStorage.getItem("stocks")) || {};
     let portfolioStocks = allStocks[portfolio] || [];
 
-    // Add new stock
-    portfolioStocks.push({
-        stockName: stockName,
-        purchasePrice: parseFloat(purchasePrice),
-        quantity: parseInt(quantity),
-        purchaseDate: purchaseDate
-    });
+    // Use the confirmed values
+    portfolioStocks.push(tempStock);
 
-    // Save back to localStorage
     allStocks[portfolio] = portfolioStocks;
     localStorage.setItem("stocks", JSON.stringify(allStocks));
 
-     // Add to table visually
-    addStockRow(stockName, purchasePrice, quantity, purchaseDate);
+    // Add visually to table
+    addStockRow(
+        tempStock.stockName,
+        tempStock.purchasePrice,
+        tempStock.quantity,
+        tempStock.purchaseDate
+    );
 
-    document.getElementById("stockName").value = "";
-    document.getElementById("purchasePrice").value = "";
-    document.getElementById("quantity").value = "";
-    document.getElementById("purchaseDate").value = "";
+    // Reset temp storage
+    tempStock = {};
 
-    showTab('managerTab');
+    // Return to stock list
+    showSection("stockListSection");
 }
 
 
@@ -92,10 +79,44 @@ function addStockRow(name, price, quantity, date) {
 // -------------------------
 // TAB SWITCHING
 // -------------------------
-function showTab(tabId) {
-    document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+function showSection(sectionId) {
+    document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+    document.querySelectorAll(".sidebar-tab").forEach(t => t.classList.remove("active"));
 
-    document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add("active");
-    document.getElementById(tabId).classList.add("active");
+    document.getElementById(sectionId).classList.add("active");
+
+    // Highlight sidebar tab if applicable
+    if (sectionId === "homeSection") {
+        document.querySelector(".sidebar-tab:nth-child(1)").classList.add("active");
+    }
+    if (sectionId === "stockListSection") {
+        document.querySelector(".sidebar-tab:nth-child(2)").classList.add("active");
+    }
+}
+
+function confirmStock() {
+    const name = document.getElementById("stockName").value;
+    const price = document.getElementById("purchasePrice").value;
+    const quantity = document.getElementById("quantity").value;
+    const date = document.getElementById("purchaseDate").value;
+
+    if (!name || !price || !quantity || !date) {
+        alert("Please fill in all fields");
+        return;
+    }
+
+    // Store temporarily
+    tempStock = {
+        stockName: name,
+        purchasePrice: parseFloat(price),
+        quantity: parseInt(quantity),
+        purchaseDate: date
+    };
+
+    document.getElementById("confirmName").innerText = name;
+    document.getElementById("confirmPrice").innerText = price;
+    document.getElementById("confirmQuantity").innerText = quantity;
+    document.getElementById("confirmDate").innerText = date;
+
+    showSection("confirmSection");
 }

@@ -4,55 +4,107 @@
     <link rel="stylesheet" href="css/styles.css">
   </head>
 <body>
-  <div class="container">
 
-  <div class="page-header">
-    <h2>Currently Viewing: <span id="portfolioName"></span></h2>
-    <button class="back-btn" onclick="goBackToPortfolios()">Back</button>
+  <div class="top-header">
+    <h1>
+        <span id="usernameDisplay"></span> — 
+        <span id="portfolioDisplay"></span> — 
+        Financial Portfolio Manager
+    </h1>
   </div>
-  
-  <!-- TAB BUTTONS -->
-  <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('managerTab')">Manager</button>
-      <button class="tab-btn" onclick="showTab('addStockTab')">Add Stock</button>
-  </div>
+<div class="layout">
 
-  <!-- MANAGER TAB -->
-  <div id="managerTab" class="tab-content active">
-    <h3>Your Stocks</h3>
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
 
-    <table>
-      <thead>
-        <tr>
-          <th>Stock</th>
-          <th>Price</th>
-          <th>Quantity</th>
-          <th>Purchase Date</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="stockTable"></tbody>
-    </table>
-  </div>
+      <div class="sidebar-top">
+        <h2 class="sidebar-title">Portfolio</h2>
 
-  <!-- ADD STOCK TAB -->
-    <div id="addStockTab" class="tab-content">
-        <h3>Add New Stock</h3>
-
-        <div class="form-row">
-            <input id="stockName" type="text" placeholder="Stock Name">
-            <input id="purchasePrice" type="number" placeholder="Purchase Price">
+        <div class="sidebar-tabs">
+            <div class="sidebar-tab active" onclick="showSection('homeSection')">HOME</div>
+            <div class="sidebar-tab" onclick="showSection('stockListSection')">STOCK LIST</div>
         </div>
-
-        <div class="form-row">
-            <input id="quantity" type="number" placeholder="Quantity">
-            <input id="purchaseDate" type="date">
-        </div>
-
-        <button onclick="addStock()">Add Stock</button>
+      </div>
+          
+      <button class="back-btn sidebar-back" onclick="goBackToPortfolios()">BACK</button>
+    
     </div>
-  </div>
-  <script src="js/stocks.js"></script>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+
+        <!-- HOME SECTION -->
+        <div id="homeSection" class="section active">
+            <h2>Portfolio Overview</h2>
+            <p>This is where your future charts and performance analytics will appear.</p>
+        </div>
+
+        <!-- STOCK LIST SECTION -->
+        <div id="stockListSection" class="section">
+            <h2>Stock List</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Stock</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                        <th>Purchase Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTable"></tbody>
+            </table>
+
+            <button class="add-btn" onclick="showSection('addStockSection')">Add New Stock</button>
+        </div>
+
+        <!-- ADD STOCK SECTION -->
+        <div id="addStockSection" class="section">
+            <h2>Add New Stock</h2>
+
+            <div class="form-group">
+                <label for="stockName">Stock Name</label>
+                <input id="stockName" type="text" placeholder="e.g., AAPL">
+            </div>
+
+            <div class="form-group">
+                <label for="purchasePrice">Purchase Price</label>
+                <input id="purchasePrice" type="number" placeholder="e.g., 150.00">
+            </div>
+
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input id="quantity" type="number" placeholder="e.g., 10">
+            </div>
+
+            <div class="form-group">
+                <label for="purchaseDate">Purchase Date</label>
+                <input id="purchaseDate" type="date">
+            </div>
+
+            <button onclick="confirmStock()">Confirm Information</button>
+        </div>
+
+        <!-- CONFIRMATION SECTION -->
+        <div id="confirmSection" class="section">
+            <h2>Confirm Stock Details</h2>
+
+            <div class="confirm-box">
+                <p><strong>Name:</strong> <span id="confirmName"></span></p>
+                <p><strong>Price:</strong> <span id="confirmPrice"></span></p>
+                <p><strong>Quantity:</strong> <span id="confirmQuantity"></span></p>
+                <p><strong>Date:</strong> <span id="confirmDate"></span></p>
+            </div>
+
+            <button onclick="addStock()">Add to Portfolio</button>
+            <button class="back-btn" onclick="showSection('addStockSection')">Back</button>
+        </div>
+
+    </div>
+</div>
+
+<script src="js/stocks.js"></script>
 </body>
 
 </html>
