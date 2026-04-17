@@ -2,7 +2,6 @@ package com.portfolio.api.dto;
 
 import lombok.Data;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.util.List;
 
 @Data
@@ -14,7 +13,12 @@ public class StockTrendResponse {
 
     @Data
     public static class TrendPoint {
-        private LocalDate date;
+        private String date;
         private BigDecimal price;
+
+        public TrendPoint(String date, BigDecimal price) {
+            this.date = date;
+            this.price = price;
+        }
     }
 }
