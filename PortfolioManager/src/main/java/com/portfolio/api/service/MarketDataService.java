@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class YahooFinanceService {
+public class MarketDataService {
 
     @Value("${twelvedata.apikey}")
     private String apiKey;
@@ -25,13 +25,11 @@ public class YahooFinanceService {
                         + symbol + "&apikey=" + apiKey;
             String response = restTemplate.getForObject(url, String.class);
             JsonNode root = objectMapper.readTree(response);
-
             if (root.has("code")) {
                 throw new IllegalArgumentException("Invalid stock symbol: " + symbol);
             }
-
             String price = root.path("price").asText();
-            if (price == null || price.isEmpty()) {
+            if (price.isEmpty()) {
                 throw new IllegalArgumentException("Could not fetch price for symbol: " + symbol);
             }
             return new BigDecimal(price);
@@ -46,11 +44,9 @@ public class YahooFinanceService {
                         + symbol + "&apikey=" + apiKey;
             String response = restTemplate.getForObject(url, String.class);
             JsonNode root = objectMapper.readTree(response);
-
             if (root.has("code")) {
                 throw new IllegalArgumentException("Invalid stock symbol: " + symbol);
             }
-
             JsonNode data = root.path("data");
             if (data.isEmpty()) {
                 throw new IllegalArgumentException("Invalid stock symbol: " + symbol);
@@ -70,18 +66,17 @@ public class YahooFinanceService {
                         + "&apikey=" + apiKey;
             String response = restTemplate.getForObject(url, String.class);
             JsonNode root = objectMapper.readTree(response);
-
             if (root.has("code")) {
                 return new ArrayList<>();
             }
-
             JsonNode values = root.path("values");
             List<MonthlyPrice> prices = new ArrayList<>();
-
             for (JsonNode node : values) {
                 String date = node.path("datetime").asText();
                 String closePrice = node.path("close").asText();
-                prices.add(new MonthlyPrice(date, new BigDecimal(closePrice)));
+                if (!date.isEmpty() && !closePrice.isEmpty()) {
+                    prices.add(new MonthlyPrice(date, new BigDecimal(closePrice)));
+                }
             }
             return prices;
         } catch (Exception e) {
@@ -90,8 +85,8 @@ public class YahooFinanceService {
     }
 
     public static class MonthlyPrice {
-        private String date;
-        private BigDecimal price;
+        private final String date;
+        private final BigDecimal price;
 
         public MonthlyPrice(String date, BigDecimal price) {
             this.date = date;

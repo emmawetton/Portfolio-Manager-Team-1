@@ -20,7 +20,7 @@ public class StockService {
 
     private final StockRepository stockRepository;
     private final PortfolioRepository portfolioRepository;
-    private final YahooFinanceService yahooFinanceService;
+    private final MarketDataService marketDataService;
 
     public List<StockResponse> getAllStocks(Long portfolioId) {
         return stockRepository.findByPortfolioId(portfolioId)
@@ -59,7 +59,7 @@ public class StockService {
         }
 
         // Stock does not exist — create a new one
-        String companyName = yahooFinanceService.getStockName(symbol);
+        String companyName = marketDataService.getStockName(symbol);
 
         stock = new Stock();
         stock.setName(companyName);
@@ -102,11 +102,13 @@ public class StockService {
             throw new ResourceNotFoundException("Stock does not belong to portfolio with id: " + portfolioId);
         }
 
-        List<YahooFinanceService.MonthlyPrice> historicalPrices = yahooFinanceService
+        List<MarketDataService.MonthlyPrice> historicalPrices = marketDataService
                 .getHistoricalPrices(stock.getShortTicketCode(), months);
 
         List<StockTrendResponse.TrendPoint> trendPoints = historicalPrices.stream()
-                .map(p -> new StockTrendResponse.TrendPoint(p.getDate(), p.getPrice()))
+                .map(p -> new StockTrendResponse.TrendPoint(
+                        p.getDate(),
+                        p.getPrice().setScale(2, RoundingMode.HALF_UP)))
                 .collect(Collectors.toList());
 
         StockTrendResponse response = new StockTrendResponse();
@@ -140,7 +142,7 @@ public class StockService {
             } else {
 
                 // Fetch fresh price from Alpha Vantage
-                currentPrice = yahooFinanceService.getCurrentPrice(stock.getShortTicketCode());
+                currentPrice = marketDataService.getCurrentPrice(stock.getShortTicketCode());
 
                 // Save the price and today's date to the database
                 stock.setLastKnownPrice(currentPrice);

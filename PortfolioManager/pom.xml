@@ -80,8 +80,6 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-<<<<<<< HEAD
-=======
 		<dependency>
     		<groupId>org.springframework.boot</groupId>
     		<artifactId>spring-boot-starter-validation</artifactId>
@@ -91,7 +89,6 @@
 			<artifactId>YahooFinanceAPI</artifactId>
 			<version>3.17.0</version>
 		</dependency>
->>>>>>> d7fdaf80165c862cf923d616bb9e1630c86f0f6b
 	</dependencies>
 	<build>
 		<plugins>
