@@ -3,7 +3,7 @@ name: Build Application JAR
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/emma" ]
     tags:
       - '*'
  
@@ -22,7 +22,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: .
+        working-directory: ./PortfolioManager
 
     steps:
       - name: Checkout source
@@ -43,7 +43,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: .
+        working-directory: ./PortfolioManager
 
     steps:
       - name: Checkout source
@@ -57,10 +57,10 @@ jobs:
           cache: maven
 
       - name: Build JAR
-        run: mvn -D package -DskipTests
+        run: mvn package -DskipTests
 
       - name: Upload JAR to GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         with:
-          files: ./target/*.jar
+          files: ./PortfolioManager/target/*.jar
