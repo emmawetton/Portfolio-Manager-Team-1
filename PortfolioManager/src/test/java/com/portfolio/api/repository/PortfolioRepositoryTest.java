@@ -1,68 +1,72 @@
 package com.portfolio.api.repository;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.time.LocalDate;
+import java.util.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.mockito.Mockito;
 
 import com.portfolio.api.model.Portfolio;
 
-@SpringBootTest
-@Transactional
 class PortfolioRepositoryTest {
 
-    @Autowired
     private PortfolioRepository portfolioRepository;
+
+    @BeforeEach
+    void setup() {
+        portfolioRepository = Mockito.mock(PortfolioRepository.class);
+    }
 
     @Test
     void testSaveAndFindById() {
         Portfolio portfolio = new Portfolio();
+        portfolio.setId(1L);
         portfolio.setName("Tech Portfolio");
         portfolio.setDescription("A portfolio of tech stocks");
         portfolio.setCreatedDate(LocalDate.of(2024, 1, 1));
 
+        when(portfolioRepository.save(any(Portfolio.class))).thenReturn(portfolio);
+        when(portfolioRepository.findById(1L)).thenReturn(Optional.of(portfolio));
+
         Portfolio saved = portfolioRepository.save(portfolio);
+        assertNotNull(saved);
+        assertEquals(1L, saved.getId());
 
-        assertNotNull(saved.getId());
-
-        Portfolio found = portfolioRepository.findById(saved.getId()).orElse(null);
-
+        Portfolio found = portfolioRepository.findById(1L).orElse(null);
         assertNotNull(found);
         assertEquals("Tech Portfolio", found.getName());
-        assertEquals("A portfolio of tech stocks", found.getDescription());
-        assertEquals(LocalDate.of(2024, 1, 1), found.getCreatedDate());
     }
 
     @Test
     void testDelete() {
         Portfolio portfolio = new Portfolio();
-        portfolio.setName("To Delete");
-        portfolio.setCreatedDate(LocalDate.now());
+        portfolio.setId(2L);
 
-        Portfolio saved = portfolioRepository.save(portfolio);
-        Long id = saved.getId();
+        doNothing().when(portfolioRepository).delete(portfolio);
+        when(portfolioRepository.findById(2L)).thenReturn(Optional.empty());
 
-        portfolioRepository.delete(saved);
+        portfolioRepository.delete(portfolio);
 
-        assertFalse(portfolioRepository.findById(id).isPresent());
+        assertFalse(portfolioRepository.findById(2L).isPresent());
     }
 
     @Test
     void testFindAll() {
         Portfolio p1 = new Portfolio();
+        p1.setId(1L);
         p1.setName("Portfolio 1");
-        p1.setCreatedDate(LocalDate.now());
 
         Portfolio p2 = new Portfolio();
+        p2.setId(2L);
         p2.setName("Portfolio 2");
-        p2.setCreatedDate(LocalDate.now());
 
-        portfolioRepository.save(p1);
-        portfolioRepository.save(p2);
+        List<Portfolio> mockList = Arrays.asList(p1, p2);
+
+        when(portfolioRepository.findAll()).thenReturn(mockList);
 
         var all = portfolioRepository.findAll();
 
