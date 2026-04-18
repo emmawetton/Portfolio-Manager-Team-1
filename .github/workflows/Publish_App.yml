@@ -3,7 +3,7 @@ name: Build Application JAR
 
 on:
   push:
-    branches: [ "main", "feature/emma" ]
+    branches: [ "main", "feature/shuaib" ]
     tags:
       - '*'
 
