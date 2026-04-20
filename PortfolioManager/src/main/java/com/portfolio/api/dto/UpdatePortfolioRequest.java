@@ -4,7 +4,7 @@ import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
 
 @Data
-public class CreatePortfolioRequest {
+public class UpdatePortfolioRequest {
 
     @NotBlank(message = "Portfolio name cannot be empty")
     private String name;
