@@ -1,102 +1,131 @@
 /**
- * charts.js
- * Manages all Chart.js chart instances used in the application.
- * Currently handles the stock price history line chart.
+ * charts.js — Chart.js integration for stock price history.
  */
 
-let _priceChart = null;
-let _activeTrendStock = null;
-let _activePeriod = 6;
+let _chart         = null;
+let _chartExpanded = null;
+let _activeStock   = null;
+let _activePeriod  = null; 
+let _lastTrends    = null;
 
-// ─── Price History Chart ──────────────────────────────────────────────────
+// ─── Load chart for a stock (populates small card + stores data) ──
+async function loadStockChart(portfolioId, stockId, symbol, name, period = '6m') {
+    _activeStock  = { portfolioId, stockId, symbol, name };
+    _activePeriod = period;
 
-/**
- * Load and display price trend data for a given stock.
- * @param {number} portfolioId
- * @param {number} stockId
- * @param {string} symbol
- * @param {string} name
- * @param {number} months - Number of months of history to fetch
- */
-async function loadStockChart(portfolioId, stockId, symbol, name, months = 6) {
-    _activeTrendStock = { portfolioId, stockId, symbol, name };
-    _activePeriod = months;
-
-    // Update panel header
-    setText('chartTitle', `${name}`);
-    setText('chartSubtitle', `${symbol} · ${months}M price history`);
-    showElement('chartControls', true, 'flex');
+    setText('chartTitle',    name);
+    setText('chartSubtitle', `${symbol} · ${period.toUpperCase()}`);
+    showElement('expandChartBtn',   true, 'flex');
     showElement('chartPlaceholder', false);
-    showElement('chartWrap', true, 'block');
-
-    // Set active period button
-    document.querySelectorAll('.period-btn').forEach(btn => {
-        toggleClass(btn, 'active', parseInt(btn.dataset.months) === months);
-    });
+    showElement('chartWrap',        true, 'block');
 
     try {
-        const data = await getStockTrends(portfolioId, stockId, months);
-        const trends = [...data.trends].reverse(); // chronological order
-        renderPriceChart(trends, symbol);
-    } catch (e) {
+        const data = await getStockTrends(portfolioId, stockId, period);
+
+        if (!data.trends || !data.trends.length) {
+            showToast('No data available for this period', 'info');
+            showElement('chartWrap',        false);
+            showElement('chartPlaceholder', true);
+            return;
+        }
+
+        const trends = [...data.trends].reverse();
+        _lastTrends  = { trends, symbol, period };
+        renderChartOnCanvas('priceChart', trends, period);
+
+    } catch {
         showToast('Could not load chart data', 'error');
-        showElement('chartWrap', false);
+        showElement('chartWrap',        false);
         showElement('chartPlaceholder', true);
     }
 }
 
-/**
- * Called when user clicks a period button (3M, 6M, 1Y).
- */
-async function changePeriod(btn, months) {
-    if (!_activeTrendStock) return;
-    const { portfolioId, stockId, symbol, name } = _activeTrendStock;
-    await loadStockChart(portfolioId, stockId, symbol, name, months);
+// ─── Period button handler (expanded modal only) ───────────────
+async function changePeriod(_btn, period) {
+    if (!_activeStock) return;
+    const { portfolioId, stockId, symbol } = _activeStock;
+    _activePeriod = period;
+
+    document.querySelectorAll('#chartModalControls .period-btn').forEach(b =>
+        toggleClass(b, 'active', b.dataset.period === period));
+
+    setText('chartModalSubtitle', `${symbol} · ${period.toUpperCase()}`);
+    setText('chartSubtitle',      `${symbol} · ${period.toUpperCase()}`);
+
+    try {
+        const data = await getStockTrends(portfolioId, stockId, period);
+        if (!data.trends || !data.trends.length) {
+            showToast('No data available for this period', 'info'); return;
+        }
+        const trends = [...data.trends].reverse();
+        _lastTrends  = { trends, symbol, period };
+        renderChartOnCanvas('priceChart',         trends, period);
+        renderChartOnCanvas('priceChartExpanded', trends, period);
+    } catch {
+        showToast('Could not load chart data', 'error');
+    }
 }
 
-/**
- * Render or update the Chart.js price chart.
- */
-function renderPriceChart(trends, symbol) {
-    const canvas = document.getElementById('priceChart');
-    if (!canvas) return;
+function changeExpandedPeriod(btn, period) {
+    return changePeriod(btn, period);
+}
 
+// ─── Expand chart to fullscreen ────────────────────────────────
+function expandChart() {
+    if (!_lastTrends || !_activeStock) return;
+    const { symbol, name } = _activeStock;
+
+    setText('chartModalTitle',    name);
+    setText('chartModalSubtitle', `${symbol} · ${_activePeriod.toUpperCase()}`);
+
+    document.querySelectorAll('#chartModalControls .period-btn').forEach(b =>
+        toggleClass(b, 'active', b.dataset.period === _activePeriod));
+
+    document.getElementById('chartModal').classList.add('open');
+
+    if (_chartExpanded) { _chartExpanded.destroy(); _chartExpanded = null; }
+    setTimeout(() => renderChartOnCanvas('priceChartExpanded', _lastTrends.trends, _lastTrends.period), 40);
+}
+
+function closeChartModal() {
+    document.getElementById('chartModal').classList.remove('open');
+    if (_chartExpanded) { _chartExpanded.destroy(); _chartExpanded = null; }
+}
+
+// ─── Render on a specific canvas ──────────────────────────────
+function renderChartOnCanvas(canvasId, trends, period) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
-    const labels = trends.map(t => formatChartDate(t.date));
-    const prices = trends.map(t => parseFloat(t.price));
+    if (canvasId === 'priceChart'         && _chart)         { _chart.destroy();         _chart         = null; }
+    if (canvasId === 'priceChartExpanded' && _chartExpanded) { _chartExpanded.destroy(); _chartExpanded = null; }
 
-    const firstPrice = prices[0] || 0;
-    const lastPrice = prices[prices.length - 1] || 0;
-    const isPositive = lastPrice >= firstPrice;
+    const labels    = trends.map(t => fmtDate(t.date, period));
+    const prices    = trends.map(t => parseFloat(t.price));
+    const isPos     = prices[prices.length - 1] >= prices[0];
+    const lineColor = isPos ? '#1a6bf5' : '#d63b3b';
+    const gradA     = isPos ? 'rgba(26,107,245,0.14)' : 'rgba(214,59,59,0.14)';
+    const gradB     = isPos ? 'rgba(26,107,245,0)'    : 'rgba(214,59,59,0)';
 
-    const lineColor = isPositive ? '#00ff88' : '#ff3d55';
-    const gradientColor = isPositive ? 'rgba(0,255,136,' : 'rgba(255,61,85,';
+    const grad = ctx.createLinearGradient(0, 0, 0, 260);
+    grad.addColorStop(0, gradA);
+    grad.addColorStop(1, gradB);
 
-    // Destroy old chart if it exists
-    if (_priceChart) {
-        _priceChart.destroy();
-        _priceChart = null;
-    }
+    const isSmall      = canvasId === 'priceChart';
+    const maxTicksLimit = isSmall ? 4 : 8;
 
-    // Build gradient fill
-    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-    gradient.addColorStop(0, gradientColor + '0.15)');
-    gradient.addColorStop(1, gradientColor + '0)');
-
-    _priceChart = new Chart(ctx, {
+    const instance = new Chart(ctx, {
         type: 'line',
         data: {
             labels,
             datasets: [{
-                label: symbol,
                 data: prices,
                 borderColor: lineColor,
-                backgroundColor: gradient,
+                backgroundColor: grad,
                 borderWidth: 2,
                 pointBackgroundColor: lineColor,
-                pointBorderColor: lineColor,
-                pointRadius: 3,
+                pointRadius: prices.length > 20 ? 0 : 3,
                 pointHoverRadius: 6,
                 pointHoverBackgroundColor: '#fff',
                 pointHoverBorderColor: lineColor,
@@ -108,80 +137,63 @@ function renderPriceChart(trends, symbol) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
+            interaction: { intersect: false, mode: 'index' },
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#191928',
-                    borderColor: '#2a2a40',
+                    backgroundColor: 'rgba(17,19,24,.95)',
+                    borderColor: 'rgba(255,255,255,.08)',
                     borderWidth: 1,
-                    titleColor: '#9090b0',
-                    bodyColor: '#e2e2f0',
-                    titleFont: { family: 'DM Mono', size: 11 },
-                    bodyFont: { family: 'DM Mono', size: 13 },
+                    titleColor: '#8b93a4',
+                    bodyColor: '#f0f1f5',
+                    titleFont: { family: 'Geist Mono', size: 11 },
+                    bodyFont:  { family: 'Geist Mono', size: 13 },
                     padding: 12,
-                    callbacks: {
-                        title: (items) => items[0].label,
-                        label: (item) => ' $' + Number(item.raw).toFixed(2)
-                    }
+                    callbacks: { label: i => ' $' + Number(i.raw).toFixed(2) }
                 }
             },
             scales: {
                 x: {
-                    grid: {
-                        color: 'rgba(255,255,255,0.03)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: '#505070',
-                        font: { family: 'DM Mono', size: 10 },
-                        maxRotation: 0
-                    },
+                    grid:  { color: 'rgba(0,0,0,.05)', drawBorder: false },
+                    ticks: { color: '#8b93a4', font: { size: 10 }, maxRotation: 0, maxTicksLimit, autoSkip: true },
                     border: { display: false }
                 },
                 y: {
                     position: 'right',
-                    grid: {
-                        color: 'rgba(255,255,255,0.03)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        color: '#505070',
-                        font: { family: 'DM Mono', size: 10 },
-                        callback: (val) => '$' + val.toFixed(0),
-                        maxTicksLimit: 6
-                    },
+                    grid:  { color: 'rgba(0,0,0,.05)', drawBorder: false },
+                    ticks: { color: '#8b93a4', font: { size: 10 }, callback: v => '$' + v.toFixed(0), maxTicksLimit: 5 },
                     border: { display: false }
                 }
             }
         }
     });
+
+    if (canvasId === 'priceChart')         _chart         = instance;
+    if (canvasId === 'priceChartExpanded') _chartExpanded = instance;
 }
 
-/**
- * Format a YYYY-MM-DD date string into a short readable label.
- * e.g. "2024-03-01" → "Mar 24"
- */
-function formatChartDate(dateStr) {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-}
-
-/**
- * Destroy and clear the price chart.
- */
-function clearChart() {
-    if (_priceChart) {
-        _priceChart.destroy();
-        _priceChart = null;
+// ─── Date formatter ────────────────────────────────────────────
+function fmtDate(str, period) {
+    const s = str.length > 10 ? str.replace(' ', 'T') : str + 'T00:00:00';
+    const d = new Date(s);
+    if (period === '1d') {
+        return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     }
-    _activeTrendStock = null;
-    showElement('chartWrap', false);
+    if (['5d', '1w', '1m'].includes(period)) {
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
+
+// ─── Clear chart ───────────────────────────────────────────────
+function clearChart() {
+    if (_chart)         { _chart.destroy();         _chart         = null; }
+    if (_chartExpanded) { _chartExpanded.destroy(); _chartExpanded = null; }
+    _activeStock = null;
+    _lastTrends  = null;
+    showElement('chartWrap',        false);
     showElement('chartPlaceholder', true);
-    showElement('chartControls', false);
-    setText('chartTitle', 'Price History');
-    setText('chartSubtitle', 'Select a stock to view its chart');
+    showElement('expandChartBtn',   false);
+    setText('chartTitle',    'Price History');
+    setText('chartSubtitle', 'Click any stock row to view its chart');
 }

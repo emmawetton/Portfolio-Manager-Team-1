@@ -1,101 +1,44 @@
 /**
- * api.js
- * Centralised API layer — all HTTP calls to the Spring Boot backend live here.
- * Every function returns a Promise that resolves with parsed JSON data
- * or rejects with a readable error message.
+ * api.js — All HTTP calls to the Spring Boot backend.
+ * Named to avoid conflicts: createPortfolioAPI, addStockAPI
  */
 
 const API_BASE = 'http://localhost:8080/api';
 
-/**
- * Core HTTP request helper.
- * Handles JSON serialisation, error parsing and response conversion.
- */
 async function request(method, path, body = null) {
-    const options = {
-        method,
-        headers: { 'Content-Type': 'application/json' }
-    };
-
-    if (body !== null) {
-        options.body = JSON.stringify(body);
-    }
+    const options = { method, headers: { 'Content-Type': 'application/json' } };
+    if (body !== null) options.body = JSON.stringify(body);
 
     const response = await fetch(API_BASE + path, options);
-
-    // 204 No Content (e.g. DELETE) — return null
     if (response.status === 204) return null;
 
     const data = await response.json();
-
-    // If the backend returned an error response, throw it
-    if (!response.ok) {
-        throw new Error(data.message || `Request failed with status ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(data.message || `Request failed (${response.status})`);
     return data;
 }
 
-// ─── Portfolio API ────────────────────────────────────────────────────────
+// ─── Portfolios ───────────────────────────────────────────────
+const getAllPortfolios    = ()               => request('GET',    '/portfolios');
+const getPortfolioById   = (id)             => request('GET',    `/portfolios/${id}`);
+const createPortfolioAPI = (name, desc)     => request('POST',   '/portfolios', { name, description: desc });
+const updatePortfolio    = (id, name, desc) => request('PUT',    `/portfolios/${id}`, { name, description: desc });
+const deletePortfolio    = (id)             => request('DELETE', `/portfolios/${id}`);
 
-/** Fetch all portfolios */
-const getAllPortfolios = () => request('GET', '/portfolios');
+// ─── Stocks ───────────────────────────────────────────────────
+const getAllStocks  = (pid)          => request('GET',    `/portfolios/${pid}/stocks`);
+const getStockById = (pid, sid)     => request('GET',    `/portfolios/${pid}/stocks/${sid}`);
+const addStockAPI  = (pid, symbol, quantity, purchasePrice, purchaseDate) =>
+    request('POST', `/portfolios/${pid}/stocks`, { symbol, quantity, purchasePrice, purchaseDate });
+const updateStock  = (pid, sid, quantity, purchasePrice) =>
+    request('PUT',  `/portfolios/${pid}/stocks/${sid}`, { quantity, purchasePrice });
+const deleteStock  = (pid, sid)     => request('DELETE', `/portfolios/${pid}/stocks/${sid}`);
 
-/** Fetch one portfolio by ID (includes stocks with live prices) */
-const getPortfolioById = (id) => request('GET', `/portfolios/${id}`);
+// period: '1d' | '5d' | '1w' | '1m' | '3m' | '6m' | '1y'
+const getStockTrends = (pid, sid, period = '6m') =>
+    request('GET', `/portfolios/${pid}/stocks/${sid}/trends?period=${encodeURIComponent(period)}`);
 
-/** Create a new portfolio */
-const createPortfolioAPI = (name, description) =>
-    request('POST', '/portfolios', { name, description });
-
-/** Update portfolio name and description */
-const updatePortfolio = (id, name, description) =>
-    request('PUT', `/portfolios/${id}`, { name, description });
-
-/** Delete a portfolio and all its stocks */
-const deletePortfolio = (id) => request('DELETE', `/portfolios/${id}`);
-
-// ─── Stock API ────────────────────────────────────────────────────────────
-
-/** Fetch all stocks in a portfolio */
-const getAllStocks = (portfolioId) =>
-    request('GET', `/portfolios/${portfolioId}/stocks`);
-
-/** Fetch one stock by ID */
-const getStockById = (portfolioId, stockId) =>
-    request('GET', `/portfolios/${portfolioId}/stocks/${stockId}`);
-
-/** Add a stock to a portfolio */
-const addStockAPI = (portfolioId, symbol, quantity, purchasePrice, purchaseDate) =>
-    request('POST', `/portfolios/${portfolioId}/stocks`, {
-        symbol,
-        quantity,
-        purchasePrice,
-        purchaseDate
-    });
-
-
-/** Update a stock's quantity and purchase price */
-const updateStock = (portfolioId, stockId, quantity, purchasePrice) =>
-    request('PUT', `/portfolios/${portfolioId}/stocks/${stockId}`, {
-        quantity,
-        purchasePrice
-    });
-
-/** Remove a stock from a portfolio */
-const deleteStock = (portfolioId, stockId) =>
-    request('DELETE', `/portfolios/${portfolioId}/stocks/${stockId}`);
-
-/** Fetch historical price trend data for a stock */
-const getStockTrends = (portfolioId, stockId, months = 6) =>
-    request('GET', `/portfolios/${portfolioId}/stocks/${stockId}/trends?months=${months}`);
-
-/** Check if the backend is reachable */
+// ─── Health ───────────────────────────────────────────────────
 async function checkHealth() {
-    try {
-        await fetch(API_BASE + '/portfolios', { method: 'GET' });
-        return true;
-    } catch {
-        return false;
-    }
+    try { await fetch(API_BASE + '/portfolios'); return true; }
+    catch { return false; }
 }

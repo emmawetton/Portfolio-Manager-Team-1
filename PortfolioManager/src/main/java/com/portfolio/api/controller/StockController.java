@@ -32,8 +32,9 @@ public class StockController {
     public ResponseEntity<StockTrendResponse> getStockTrends(
             @PathVariable Long portfolioId,
             @PathVariable Long stockId,
-            @RequestParam(defaultValue = "6") int months) {
-        return ResponseEntity.ok(stockService.getStockTrends(portfolioId, stockId, months));
+            @RequestParam(defaultValue = "6") int months,
+            @RequestParam(required = false) String period) {
+        return ResponseEntity.ok(stockService.getStockTrends(portfolioId, stockId, months, period));
     }
 
     @PostMapping

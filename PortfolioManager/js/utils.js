@@ -1,92 +1,48 @@
 /**
- * utils.js
- * Shared utility functions used across the entire application.
- * Covers formatting, toast notifications, modal dialogs, DOM helpers,
- * theme management and mobile drawer control.
+ * utils.js — Shared helpers: formatting, theme, drawer, toast, modal, DOM.
  */
 
-// ─── Number Formatting ────────────────────────────────────────────────────
-
-/**
- * Format a number as a USD dollar amount.
- * e.g. 1234.5 → "$1,234.50"
- */
-function formatCurrency(value) {
-    if (value == null || isNaN(value)) return '$0.00';
-    const num = Number(value);
-    const formatted = Math.abs(num).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return (num < 0 ? '-$' : '$') + formatted;
+// ─── Currency & Number Formatting ─────────────────────────────
+function formatCurrency(v) {
+    if (v == null || isNaN(v)) return '$0.00';
+    const n = Number(v);
+    const f = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (n < 0 ? '-$' : '$') + f;
 }
 
-/**
- * Format a percentage value with a sign prefix.
- * e.g. 12.34 → "+12.34%", -5.6 → "-5.60%"
- */
-function formatPercent(value) {
-    if (value == null || isNaN(value)) return '0.00%';
-    const num = Number(value);
-    return (num >= 0 ? '+' : '') + num.toFixed(2) + '%';
+function formatPercent(v) {
+    if (v == null || isNaN(v)) return '+0.00%';
+    const n = Number(v);
+    return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 }
 
-/**
- * Return 'pos' or 'neg' CSS class based on value sign.
- */
-function signClass(value) {
-    return Number(value) >= 0 ? 'pos' : 'neg';
+function formatNumber(v, d = 2) {
+    if (v == null || isNaN(v)) return '0';
+    return Number(v).toFixed(d);
 }
 
-/**
- * Format a decimal number to fixed places.
- */
-function formatNumber(value, decimals = 2) {
-    if (value == null || isNaN(value)) return '0';
-    return Number(value).toFixed(decimals);
-}
+function signClass(v) { return Number(v) >= 0 ? 'pos' : 'neg'; }
 
-/**
- * Shorten a large number for display (e.g. 1500000 → "1.5M")
- */
-function formatCompact(value) {
-    const num = Number(value);
-    if (num >= 1_000_000) return '$' + (num / 1_000_000).toFixed(1) + 'M';
-    if (num >= 1_000)     return '$' + (num / 1_000).toFixed(1) + 'K';
-    return formatCurrency(value);
-}
-
-// ─── Theme ────────────────────────────────────────────────────────────────
-
-/**
- * Apply a theme ('light' | 'dark') to the document and persist it.
- */
+// ─── Theme ─────────────────────────────────────────────────────
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('folio-theme', theme);
+    try { localStorage.setItem('folio-theme', theme); } catch {}
 }
 
-/**
- * Toggle between light and dark mode.
- */
 function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'light';
-    applyTheme(current === 'light' ? 'dark' : 'light');
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(cur === 'light' ? 'dark' : 'light');
 }
 
-/**
- * Load saved theme preference on startup.
- */
 function initTheme() {
-    const saved = localStorage.getItem('folio-theme');
-    if (saved) {
-        applyTheme(saved);
-    } else {
-        // Respect system preference as fallback
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        applyTheme(prefersDark ? 'dark' : 'light');
-    }
+    try {
+        const saved = localStorage.getItem('folio-theme');
+        if (saved) { applyTheme(saved); return; }
+    } catch {}
+    applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 }
 
-// ─── Mobile Drawer ────────────────────────────────────────────────────────
-
+// ─── Mobile Drawer ──────────────────────────────────────────────
 function openDrawer() {
     document.getElementById('sidebar').classList.add('open');
     document.getElementById('drawerOverlay').classList.add('open');
@@ -99,118 +55,71 @@ function closeDrawer() {
     document.body.style.overflow = '';
 }
 
-// ─── Toast Notifications ──────────────────────────────────────────────────
+// ─── Toast ──────────────────────────────────────────────────────
+const TOAST_MS = 3500;
 
-const TOAST_DURATION = 3500;
-
-/**
- * Show a toast notification.
- * @param {string} message - The message to display
- * @param {'success'|'error'|'info'} type - Visual style
- */
-function showToast(message, type = 'success') {
+function showToast(msg, type = 'success') {
     const container = document.getElementById('toastContainer');
     if (!container) return;
 
     const icons = { success: '✓', error: '✕', info: 'i' };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span class="toast-icon">${icons[type] || '●'}</span><span>${escapeHTML(String(msg))}</span>`;
+    container.appendChild(el);
 
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <span class="toast-icon">${icons[type] || '●'}</span>
-        <span>${escapeHTML(message)}</span>
-    `;
-
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => toast.classList.add('show'));
-    });
-
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
     setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 350);
-    }, TOAST_DURATION);
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 350);
+    }, TOAST_MS);
 }
 
-// ─── Modal Dialog ─────────────────────────────────────────────────────────
+// ─── Modal ──────────────────────────────────────────────────────
+let _modalCb = null;
 
-let _modalCallback = null;
-
-/**
- * Show a confirmation modal dialog.
- * @param {string} title       - Modal heading
- * @param {string} body        - Modal message
- * @param {Function} onConfirm - Called when user confirms
- * @param {string} confirmLabel- Text on confirm button
- */
-function showModal(title, body, onConfirm, confirmLabel = 'Confirm') {
+function showModal(title, body, onConfirm, label = 'Confirm') {
     document.getElementById('modalTitle').textContent   = title;
     document.getElementById('modalBody').textContent    = body;
-    document.getElementById('modalConfirm').textContent = confirmLabel;
+    document.getElementById('modalConfirm').textContent = label;
     document.getElementById('modalOverlay').classList.add('open');
-
-    _modalCallback = onConfirm;
-
-    document.getElementById('modalConfirm').onclick = () => {
-        closeModal();
-        if (_modalCallback) _modalCallback();
-    };
+    _modalCb = onConfirm;
+    document.getElementById('modalConfirm').onclick = () => { const cb = _modalCb; closeModal(); if (cb) cb(); };
 }
 
 function closeModal() {
     document.getElementById('modalOverlay').classList.remove('open');
-    _modalCallback = null;
+    _modalCb = null;
 }
 
-// ─── DOM Helpers ──────────────────────────────────────────────────────────
-
-/** Set element text content safely. */
+// ─── DOM Helpers ─────────────────────────────────────────────────
 function setText(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
 }
 
-/** Set element inner HTML. */
-function setHTML(id, html) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = html;
-}
-
-/** Add or remove a CSS class based on a condition. */
-function toggleClass(el, className, condition) {
-    if (typeof el === 'string') el = document.getElementById(el);
-    if (!el) return;
-    el.classList.toggle(className, condition);
-}
-
-/** Show or hide an element. */
 function showElement(id, show = true, display = 'block') {
     const el = document.getElementById(id);
     if (el) el.style.display = show ? display : 'none';
 }
 
-/** Disable/enable a button and optionally change its text. */
-function setButtonLoading(id, loading, loadingText = 'Loading…', originalText = null) {
+function toggleClass(el, cls, cond) {
+    if (typeof el === 'string') el = document.getElementById(el);
+    if (el) el.classList.toggle(cls, cond);
+}
+
+function setButtonLoading(id, loading, loadingText = 'Loading…', orig = null) {
     const btn = document.getElementById(id);
     if (!btn) return;
     btn.disabled = loading;
-    if (loading) {
-        btn.dataset.originalText = btn.textContent.trim();
-        btn.textContent = loadingText;
-    } else {
-        btn.textContent = originalText || btn.dataset.originalText || btn.textContent;
-    }
+    if (loading) { btn.dataset.orig = btn.textContent.trim(); btn.textContent = loadingText; }
+    else btn.textContent = orig || btn.dataset.orig || btn.textContent;
 }
 
-/** Get today's date as YYYY-MM-DD. */
-function todayString() {
-    return new Date().toISOString().split('T')[0];
-}
+function todayString() { return new Date().toISOString().split('T')[0]; }
 
-/** Escape HTML to prevent XSS. */
 function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.appendChild(document.createTextNode(String(str)));
-    return div.innerHTML;
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(String(str)));
+    return d.innerHTML;
 }

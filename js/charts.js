@@ -6,7 +6,7 @@
 
 let _priceChart     = null;
 let _activeTrendStock = null;
-let _activePeriod   = 6;
+let _activePeriod   = 1;
 
 // ─── CSS variable helpers ─────────────────────────────────────────────────
 

@@ -84,9 +84,9 @@ public class StockControllerTest {
                 new StockTrendResponse.TrendPoint("2023-12-01", new BigDecimal("145.00"))
         ));
 
-        when(stockService.getStockTrends(1L, 10L, 6)).thenReturn(trend);
+        when(stockService.getStockTrends(1L, 10L, 6, null)).thenReturn(trend);
 
-        ResponseEntity<StockTrendResponse> response = controller.getStockTrends(1L, 10L, 6);
+        ResponseEntity<StockTrendResponse> response = controller.getStockTrends(1L, 10L, 6, null);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("AAPL", response.getBody().getSymbol());

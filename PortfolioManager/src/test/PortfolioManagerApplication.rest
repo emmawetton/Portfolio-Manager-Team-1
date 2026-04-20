@@ -236,7 +236,7 @@ Content-Type: application/json
 ### Delete a stock from portfolio
 ### Expected: 204 No Content
 ### Returns: empty response
-DELETE http://localhost:8080/api/portfolios/1/stocks/3
+DELETE http://localhost:8080/api/portfolios/4
 
 ###
 

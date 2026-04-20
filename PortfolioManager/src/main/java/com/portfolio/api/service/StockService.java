@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -94,7 +95,7 @@ public class StockService {
         stockRepository.deleteById(stockId);
     }
 
-    public StockTrendResponse getStockTrends(Long portfolioId, Long stockId, int months) {
+    public StockTrendResponse getStockTrends(Long portfolioId, Long stockId, int months, String period) {
         Stock stock = stockRepository.findById(stockId)
                 .orElseThrow(() -> new ResourceNotFoundException("Stock not found with id: " + stockId));
 
@@ -102,8 +103,9 @@ public class StockService {
             throw new ResourceNotFoundException("Stock does not belong to portfolio with id: " + portfolioId);
         }
 
-        List<MarketDataService.MonthlyPrice> historicalPrices = marketDataService
-                .getHistoricalPrices(stock.getShortTicketCode(), months);
+        List<MarketDataService.MonthlyPrice> historicalPrices = (period != null && !period.isEmpty())
+                ? marketDataService.getHistoricalPricesByPeriod(stock.getShortTicketCode(), period)
+                : marketDataService.getHistoricalPrices(stock.getShortTicketCode(), months);
 
         List<StockTrendResponse.TrendPoint> trendPoints = historicalPrices.stream()
                 .map(p -> new StockTrendResponse.TrendPoint(
@@ -131,22 +133,19 @@ public class StockService {
         try {
             BigDecimal currentPrice;
 
-            // Check if we already fetched the price today
+            // Use cached price if it was fetched within the last 5 minutes
             if (stock.getLastKnownPrice() != null &&
                     stock.getLastPriceUpdated() != null &&
-                    stock.getLastPriceUpdated().isEqual(LocalDate.now())) {
+                    stock.getLastPriceUpdated().isAfter(LocalDateTime.now().minusMinutes(5))) {
 
-                // Use cached price — no API call needed
                 currentPrice = stock.getLastKnownPrice();
 
             } else {
 
-                // Fetch fresh price from Alpha Vantage
                 currentPrice = marketDataService.getCurrentPrice(stock.getShortTicketCode());
 
-                // Save the price and today's date to the database
                 stock.setLastKnownPrice(currentPrice);
-                stock.setLastPriceUpdated(LocalDate.now());
+                stock.setLastPriceUpdated(LocalDateTime.now());
                 stockRepository.save(stock);
             }
 

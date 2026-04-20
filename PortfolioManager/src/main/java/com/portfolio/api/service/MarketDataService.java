@@ -58,11 +58,31 @@ public class MarketDataService {
     }
 
     public List<MonthlyPrice> getHistoricalPrices(String symbol, int months) {
+        return fetchTimeSeries(symbol, "1month", months);
+    }
+
+    public List<MonthlyPrice> getHistoricalPricesByPeriod(String symbol, String period) {
+        String interval;
+        int outputsize;
+        switch (period) {
+            case "1d": interval = "1h";   outputsize = 24;  break; // hourly — shows time on x-axis
+            case "5d": interval = "1day"; outputsize = 5;   break;
+            case "1w": interval = "1day"; outputsize = 7;   break;
+            case "1m": interval = "1day"; outputsize = 30;  break;
+            case "3m": interval = "1day"; outputsize = 90;  break;
+            case "6m": interval = "1day"; outputsize = 180; break;
+            case "1y": interval = "1day"; outputsize = 365; break;
+            default:   interval = "1day"; outputsize = 180; break;
+        }
+        return fetchTimeSeries(symbol, interval, outputsize);
+    }
+
+    private List<MonthlyPrice> fetchTimeSeries(String symbol, String interval, int outputsize) {
         try {
             String url = "https://api.twelvedata.com/time_series?symbol="
                         + symbol
-                        + "&interval=1month"
-                        + "&outputsize=" + months
+                        + "&interval=" + interval
+                        + "&outputsize=" + outputsize
                         + "&apikey=" + apiKey;
             String response = restTemplate.getForObject(url, String.class);
             JsonNode root = objectMapper.readTree(response);

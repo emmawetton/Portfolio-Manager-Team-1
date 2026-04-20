@@ -2,6 +2,7 @@ package com.portfolio.api.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -40,7 +41,7 @@ public class Stock {
     private Portfolio portfolio;
 
     private BigDecimal lastKnownPrice;
-    private LocalDate lastPriceUpdated;
+    private LocalDateTime lastPriceUpdated;
 
 
 }
