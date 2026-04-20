@@ -4,7 +4,7 @@
  * creating, listing, selecting and deleting portfolios.
  */
 
-let _selectedPortfolioId = null;
+let _selectedPortfolioId   = null;
 let _selectedPortfolioData = null;
 
 // ─── Load & Render Portfolio List ─────────────────────────────────────────
@@ -17,8 +17,9 @@ async function loadPortfolios() {
         const portfolios = await getAllPortfolios();
         renderPortfolioList(portfolios);
     } catch (e) {
-        document.getElementById('portfolioList').innerHTML = `
-            <div style="padding:12px 4px;color:var(--danger);font-size:12px;font-family:var(--mono)">
+        const list = document.getElementById('portfolioList');
+        if (list) list.innerHTML = `
+            <div style="padding:12px 0;color:var(--neg);font-size:12px;font-family:var(--font-mono);line-height:1.5">
                 Could not load portfolios.<br>Is the server running?
             </div>`;
     }
@@ -29,17 +30,18 @@ async function loadPortfolios() {
  */
 function renderPortfolioList(portfolios) {
     const container = document.getElementById('portfolioList');
+    if (!container) return;
 
     if (!portfolios || portfolios.length === 0) {
         container.innerHTML = `
-            <div style="padding:20px 4px;text-align:center;color:var(--text-3);font-size:12px;font-family:var(--mono)">
+            <div style="padding:20px 0;text-align:center;color:var(--text-3);font-size:12px;font-family:var(--font-mono);line-height:1.6">
                 No portfolios yet.<br>Create one above.
             </div>`;
         return;
     }
 
     container.innerHTML = portfolios.map(p => {
-        const isActive = p.id === _selectedPortfolioId;
+        const isActive   = p.id === _selectedPortfolioId;
         const returnSign = signClass(p.totalProfitLossPercentage);
         return `
             <div class="portfolio-item ${isActive ? 'active' : ''}" onclick="selectPortfolio(${p.id})">
@@ -59,7 +61,7 @@ function renderPortfolioList(portfolios) {
  * Read form inputs, validate, call the API and refresh the list.
  */
 async function createPortfolio() {
-    const name = document.getElementById('portfolioName').value.trim();
+    const name        = document.getElementById('portfolioName').value.trim();
     const description = document.getElementById('portfolioDesc').value.trim();
 
     if (!name) {
@@ -68,15 +70,16 @@ async function createPortfolio() {
         return;
     }
 
-    setButtonLoading('createPortfolioBtn', true, '+ Creating...');
+    setButtonLoading('createPortfolioBtn', true, 'Creating…');
 
     try {
-        const portfolio = await createPortfolioAPI(name, description);
+        const portfolio = await window.createPortfolio_API(name, description);
         document.getElementById('portfolioName').value = '';
         document.getElementById('portfolioDesc').value = '';
         showToast(`"${portfolio.name}" created`);
         await loadPortfolios();
         selectPortfolio(portfolio.id);
+        closeDrawer(); // auto-close on mobile after creation
     } catch (e) {
         showToast(e.message, 'error');
     } finally {
@@ -87,7 +90,7 @@ async function createPortfolio() {
 // ─── Select Portfolio ─────────────────────────────────────────────────────
 
 /**
- * Select a portfolio: fetch its full data and render the main view.
+ * Select a portfolio: fetch full data and render the main view.
  */
 async function selectPortfolio(id) {
     _selectedPortfolioId = id;
@@ -95,15 +98,22 @@ async function selectPortfolio(id) {
     showElement('welcomeScreen', false);
     showElement('portfolioView', true, 'flex');
 
-    // Show loading state in summary
-    setText('totalValue', '...');
-    setText('totalPnl', '...');
-    setText('totalReturn', '...');
-    setText('totalInvested', '...');
-    setText('totalHoldings', '...');
+    // Update mobile topnav
+    showElement('topnavBreadcrumb', true, 'flex');
+    showElement('topnavActions', true, 'flex');
+
+    // Loading placeholders
+    setText('totalValue',    '…');
+    setText('totalPnl',      '…');
+    setText('totalReturn',   '…');
+    setText('totalInvested', '…');
+    setText('totalHoldings', '…');
+
+    // Close the mobile drawer
+    closeDrawer();
 
     try {
-        const portfolio = await getPortfolioById(id);
+        const portfolio       = await getPortfolioById(id);
         _selectedPortfolioData = portfolio;
         renderPortfolioView(portfolio);
         await loadPortfolios(); // refresh sidebar with latest values
@@ -113,14 +123,20 @@ async function selectPortfolio(id) {
 }
 
 /**
- * Deselect the current portfolio and show the welcome screen.
+ * Deselect the current portfolio and return to the welcome screen.
  */
 function deselectPortfolio() {
-    _selectedPortfolioId = null;
+    _selectedPortfolioId   = null;
     _selectedPortfolioData = null;
     clearChart();
+
     showElement('portfolioView', false);
     showElement('welcomeScreen', true, 'flex');
+
+    // Hide mobile topnav breadcrumb
+    showElement('topnavBreadcrumb', false);
+    showElement('topnavActions',    false);
+
     loadPortfolios();
 }
 
@@ -130,11 +146,13 @@ function deselectPortfolio() {
  * Populate all parts of the main portfolio view with data.
  */
 function renderPortfolioView(portfolio) {
-    // Topbar
-    setText('topbarName', portfolio.name);
-    setText('topbarMeta',
-        `${portfolio.numberOfStocks} holding${portfolio.numberOfStocks !== 1 ? 's' : ''} · Created ${portfolio.createdDate || '—'}`
-    );
+    // Desktop heading + mobile topnav
+    const title = escapeHTML(portfolio.name);
+    setText('portfolioTitle', portfolio.name);
+    setText('topbarName',     portfolio.name);
+
+    const metaText = `${portfolio.numberOfStocks} holding${portfolio.numberOfStocks !== 1 ? 's' : ''} · Created ${portfolio.createdDate || '—'}`;
+    setText('topbarMeta', metaText);
 
     // Summary strip
     const totalInvested = calculateTotalInvested(portfolio.stocks);
@@ -146,34 +164,30 @@ function renderPortfolioView(portfolio) {
     // Allocation panel
     renderAllocation(portfolio.stocks);
 
-    // Pre-fill the date input
-    document.getElementById('stockDate').value = todayString();
+    // Pre-fill the date input with today
+    const dateInput = document.getElementById('stockDate');
+    if (dateInput && !dateInput.value) dateInput.value = todayString();
 }
 
 /**
  * Update the summary strip numbers.
  */
 function updateSummaryStrip(portfolio, totalInvested) {
-    const totalValueEl = document.getElementById('totalValue');
-    const totalPnlEl = document.getElementById('totalPnl');
-    const totalReturnEl = document.getElementById('totalReturn');
-
-    setText('totalValue', formatCurrency(portfolio.totalValue));
+    setText('totalValue',    formatCurrency(portfolio.totalValue));
     setText('totalInvested', formatCurrency(totalInvested));
     setText('totalHoldings', portfolio.numberOfStocks);
 
-    if (totalValueEl) {
-        totalValueEl.className = 'summary-value';
+    const pnlEl    = document.getElementById('totalPnl');
+    const returnEl = document.getElementById('totalReturn');
+
+    if (pnlEl) {
+        pnlEl.textContent = formatCurrency(portfolio.totalProfitLoss);
+        pnlEl.className   = `summary-value ${signClass(portfolio.totalProfitLoss)}`;
     }
 
-    if (totalPnlEl) {
-        totalPnlEl.textContent = formatCurrency(portfolio.totalProfitLoss);
-        totalPnlEl.className = `summary-value ${signClass(portfolio.totalProfitLoss)}`;
-    }
-
-    if (totalReturnEl) {
-        totalReturnEl.textContent = formatPercent(portfolio.totalProfitLossPercentage);
-        totalReturnEl.className = `summary-value ${signClass(portfolio.totalProfitLossPercentage)}`;
+    if (returnEl) {
+        returnEl.textContent = formatPercent(portfolio.totalProfitLossPercentage);
+        returnEl.className   = `summary-value ${signClass(portfolio.totalProfitLossPercentage)}`;
     }
 }
 
@@ -217,7 +231,7 @@ function deleteCurrentPortfolio() {
  */
 async function refreshPortfolio() {
     if (!_selectedPortfolioId) return;
-    showToast('Refreshing prices...', 'info');
+    showToast('Refreshing prices…', 'info');
     await selectPortfolio(_selectedPortfolioId);
 }
 
@@ -238,20 +252,22 @@ function renderAllocation(stocks) {
     const totalValue = stocks.reduce((sum, s) => sum + (Number(s.currentValue) || 0), 0);
 
     if (totalValue === 0) {
-        container.innerHTML = `<div class="allocation-empty">Prices loading...</div>`;
+        container.innerHTML = `<div class="allocation-empty">Prices loading…</div>`;
         return;
     }
 
-    // Sort by value descending
     const sorted = [...stocks].sort((a, b) =>
         (Number(b.currentValue) || 0) - (Number(a.currentValue) || 0)
     );
 
-    // Colour palette for bars
-    const colors = ['#00ff88', '#3d8bff', '#ffb340', '#ff3d55', '#a855f7', '#06b6d4'];
+    // Accent colour palette — works in both themes
+    const colors = [
+        '#1a6bf5', '#0d9e6e', '#f59e0b', '#d63b3b',
+        '#a855f7', '#06b6d4', '#ec4899', '#84cc16'
+    ];
 
     container.innerHTML = sorted.map((stock, i) => {
-        const pct = totalValue > 0 ? ((Number(stock.currentValue) || 0) / totalValue * 100) : 0;
+        const pct   = totalValue > 0 ? ((Number(stock.currentValue) || 0) / totalValue * 100) : 0;
         const color = colors[i % colors.length];
         return `
             <div class="allocation-item">

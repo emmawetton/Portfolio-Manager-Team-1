@@ -74,6 +74,7 @@ const addStockAPI = (portfolioId, symbol, quantity, purchasePrice, purchaseDate)
         purchaseDate
     });
 
+
 /** Update a stock's quantity and purchase price */
 const updateStock = (portfolioId, stockId, quantity, purchasePrice) =>
     request('PUT', `/portfolios/${portfolioId}/stocks/${stockId}`, {

@@ -1,52 +1,50 @@
 /**
  * app.js
  * Application entry point.
- * Handles initialisation, connection status polling and
- * wires up API function name aliases to avoid naming conflicts.
+ * Handles initialisation, connection polling, keyboard shortcuts,
+ * theme persistence and API function name aliasing.
  */
 
 // ─── API Aliases ──────────────────────────────────────────────────────────
-// Some module functions have the same name as API functions.
-// We alias the API functions here so modules can call them clearly.
+// Alias the raw API functions so portfolio.js / stocks.js can call them
+// without naming conflicts with their own local functions.
 window.createPortfolio_API = createPortfolioAPI;
-window.addStock_API = addStockAPI;
+window.addStock_API        = addStockAPI;
+
 // ─── Connection Status ────────────────────────────────────────────────────
 
-/**
- * Check backend connectivity and update the status indicator.
- */
 async function updateConnectionStatus() {
     const dot  = document.getElementById('statusDot');
     const text = document.getElementById('statusText');
     if (!dot || !text) return;
 
     const isOnline = await checkHealth();
-
-    dot.className  = 'status-dot ' + (isOnline ? 'connected' : 'disconnected');
+    dot.className    = 'status-dot ' + (isOnline ? 'connected' : 'disconnected');
     text.textContent = isOnline ? 'Connected' : 'Server offline';
 }
 
 // ─── Keyboard Shortcuts ───────────────────────────────────────────────────
 
 document.addEventListener('keydown', (e) => {
-    // Escape closes the modal
+    // Escape: close modal or drawer
     if (e.key === 'Escape') {
         closeModal();
+        closeDrawer();
     }
 
-    // Enter on portfolio name input triggers create
+    // Enter on portfolio name → create portfolio
     if (e.key === 'Enter' && document.activeElement.id === 'portfolioName') {
         createPortfolio();
     }
 
-    // Enter on any stock form input triggers add
+    // Enter on any stock form field → add stock
     const stockInputs = ['stockSymbol', 'stockQty', 'stockPrice', 'stockDate'];
     if (e.key === 'Enter' && stockInputs.includes(document.activeElement.id)) {
         addStock();
     }
 });
 
-// ─── Symbol Input Auto-uppercase ─────────────────────────────────────────
+// ─── Symbol input auto-uppercase ─────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
     const symbolInput = document.getElementById('stockSymbol');
@@ -59,21 +57,39 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// ─── Swipe-to-close drawer (mobile UX) ───────────────────────────────────
+
+(function initSwipeClose() {
+    let startX = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+        const deltaX = e.changedTouches[0].clientX - startX;
+        const sidebar = document.getElementById('sidebar');
+        // Swipe left ≥ 60px while drawer is open → close
+        if (deltaX < -60 && sidebar && sidebar.classList.contains('open')) {
+            closeDrawer();
+        }
+    }, { passive: true });
+})();
+
 // ─── Init ─────────────────────────────────────────────────────────────────
 
-/**
- * Bootstrap the application on page load.
- */
 async function init() {
-    // Check connection immediately
+    // Apply saved or system theme before anything renders
+    initTheme();
+
+    // Check backend connectivity
     await updateConnectionStatus();
 
-    // Load portfolio list in sidebar
+    // Load portfolio list
     await loadPortfolios();
 
-    // Poll connection status every 30 seconds
+    // Poll every 30 s
     setInterval(updateConnectionStatus, 30_000);
 }
 
-// Start the app
 init();
