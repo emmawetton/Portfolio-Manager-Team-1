@@ -1,41 +1,42 @@
 /**
  * charts.js
  * Manages all Chart.js chart instances used in the application.
- * Currently handles the stock price history line chart.
+ * Reads CSS variables at render time so charts respect light/dark mode.
  */
 
-let _priceChart = null;
+let _priceChart     = null;
 let _activeTrendStock = null;
-let _activePeriod = 6;
+let _activePeriod   = 6;
+
+// ─── CSS variable helpers ─────────────────────────────────────────────────
+
+/** Read a computed CSS variable from :root */
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
 
 // ─── Price History Chart ──────────────────────────────────────────────────
 
 /**
  * Load and display price trend data for a given stock.
- * @param {number} portfolioId
- * @param {number} stockId
- * @param {string} symbol
- * @param {string} name
- * @param {number} months - Number of months of history to fetch
  */
 async function loadStockChart(portfolioId, stockId, symbol, name, months = 6) {
     _activeTrendStock = { portfolioId, stockId, symbol, name };
-    _activePeriod = months;
+    _activePeriod     = months;
 
-    // Update panel header
-    setText('chartTitle', `${name}`);
+    setText('chartTitle',    name);
     setText('chartSubtitle', `${symbol} · ${months}M price history`);
     showElement('chartControls', true, 'flex');
     showElement('chartPlaceholder', false);
     showElement('chartWrap', true, 'block');
 
-    // Set active period button
+    // Highlight active period button
     document.querySelectorAll('.period-btn').forEach(btn => {
         toggleClass(btn, 'active', parseInt(btn.dataset.months) === months);
     });
 
     try {
-        const data = await getStockTrends(portfolioId, stockId, months);
+        const data   = await getStockTrends(portfolioId, stockId, months);
         const trends = [...data.trends].reverse(); // chronological order
         renderPriceChart(trends, symbol);
     } catch (e) {
@@ -56,6 +57,7 @@ async function changePeriod(btn, months) {
 
 /**
  * Render or update the Chart.js price chart.
+ * Uses CSS variables to stay in sync with the active theme.
  */
 function renderPriceChart(trends, symbol) {
     const canvas = document.getElementById('priceChart');
@@ -66,23 +68,36 @@ function renderPriceChart(trends, symbol) {
     const labels = trends.map(t => formatChartDate(t.date));
     const prices = trends.map(t => parseFloat(t.price));
 
-    const firstPrice = prices[0] || 0;
-    const lastPrice = prices[prices.length - 1] || 0;
+    const firstPrice = prices[0]                 || 0;
+    const lastPrice  = prices[prices.length - 1] || 0;
     const isPositive = lastPrice >= firstPrice;
 
-    const lineColor = isPositive ? '#00ff88' : '#ff3d55';
-    const gradientColor = isPositive ? 'rgba(0,255,136,' : 'rgba(255,61,85,';
+    // Resolve colours from CSS variables for theme-awareness
+    const lineColor    = isPositive ? cssVar('--pos') : cssVar('--neg');
+    const gradientStop = isPositive
+        ? ['rgba(13,158,110,0.14)', 'rgba(13,158,110,0)']
+        : ['rgba(214,59,59,0.14)',  'rgba(214,59,59,0)'];
 
-    // Destroy old chart if it exists
+    const gridColor    = document.documentElement.getAttribute('data-theme') === 'dark'
+        ? 'rgba(255,255,255,0.04)'
+        : 'rgba(0,0,0,0.05)';
+
+    const tickColor    = cssVar('--text-3');
+    const tooltipBg    = cssVar('--surface');
+    const tooltipBorder= cssVar('--border');
+    const tooltipTitle = cssVar('--text-2');
+    const tooltipBody  = cssVar('--text-1');
+
+    // Destroy old chart
     if (_priceChart) {
         _priceChart.destroy();
         _priceChart = null;
     }
 
-    // Build gradient fill
-    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-    gradient.addColorStop(0, gradientColor + '0.15)');
-    gradient.addColorStop(1, gradientColor + '0)');
+    // Gradient fill
+    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, gradientStop[0]);
+    gradient.addColorStop(1, gradientStop[1]);
 
     _priceChart = new Chart(ctx, {
         type: 'line',
@@ -96,9 +111,9 @@ function renderPriceChart(trends, symbol) {
                 borderWidth: 2,
                 pointBackgroundColor: lineColor,
                 pointBorderColor: lineColor,
-                pointRadius: 3,
-                pointHoverRadius: 6,
-                pointHoverBackgroundColor: '#fff',
+                pointRadius: 2,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: tooltipBg,
                 pointHoverBorderColor: lineColor,
                 pointHoverBorderWidth: 2,
                 fill: true,
@@ -108,21 +123,19 @@ function renderPriceChart(trends, symbol) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
+            interaction: { intersect: false, mode: 'index' },
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    backgroundColor: '#191928',
-                    borderColor: '#2a2a40',
+                    backgroundColor: tooltipBg,
+                    borderColor: tooltipBorder,
                     borderWidth: 1,
-                    titleColor: '#9090b0',
-                    bodyColor: '#e2e2f0',
-                    titleFont: { family: 'DM Mono', size: 11 },
-                    bodyFont: { family: 'DM Mono', size: 13 },
+                    titleColor: tooltipTitle,
+                    bodyColor: tooltipBody,
+                    titleFont: { family: 'Geist Mono, monospace', size: 11 },
+                    bodyFont: { family: 'Geist Mono, monospace', size: 13 },
                     padding: 12,
+                    displayColors: false,
                     callbacks: {
                         title: (items) => items[0].label,
                         label: (item) => ' $' + Number(item.raw).toFixed(2)
@@ -131,28 +144,23 @@ function renderPriceChart(trends, symbol) {
             },
             scales: {
                 x: {
-                    grid: {
-                        color: 'rgba(255,255,255,0.03)',
-                        drawBorder: false
-                    },
+                    grid: { color: gridColor, drawBorder: false },
                     ticks: {
-                        color: '#505070',
-                        font: { family: 'DM Mono', size: 10 },
-                        maxRotation: 0
+                        color: tickColor,
+                        font: { family: 'Geist Mono, monospace', size: 10 },
+                        maxRotation: 0,
+                        maxTicksLimit: 8
                     },
                     border: { display: false }
                 },
                 y: {
                     position: 'right',
-                    grid: {
-                        color: 'rgba(255,255,255,0.03)',
-                        drawBorder: false
-                    },
+                    grid: { color: gridColor, drawBorder: false },
                     ticks: {
-                        color: '#505070',
-                        font: { family: 'DM Mono', size: 10 },
+                        color: tickColor,
+                        font: { family: 'Geist Mono, monospace', size: 10 },
                         callback: (val) => '$' + val.toFixed(0),
-                        maxTicksLimit: 6
+                        maxTicksLimit: 5
                     },
                     border: { display: false }
                 }
@@ -163,7 +171,7 @@ function renderPriceChart(trends, symbol) {
 
 /**
  * Format a YYYY-MM-DD date string into a short readable label.
- * e.g. "2024-03-01" → "Mar 24"
+ * e.g. "2024-03-01" → "Mar '24"
  */
 function formatChartDate(dateStr) {
     const date = new Date(dateStr + 'T00:00:00');
@@ -171,7 +179,7 @@ function formatChartDate(dateStr) {
 }
 
 /**
- * Destroy and clear the price chart.
+ * Destroy and reset the price chart.
  */
 function clearChart() {
     if (_priceChart) {
@@ -182,6 +190,6 @@ function clearChart() {
     showElement('chartWrap', false);
     showElement('chartPlaceholder', true);
     showElement('chartControls', false);
-    setText('chartTitle', 'Price History');
+    setText('chartTitle',    'Price History');
     setText('chartSubtitle', 'Select a stock to view its chart');
 }

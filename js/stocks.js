@@ -7,8 +7,8 @@
 // ─── Holdings Table ───────────────────────────────────────────────────────
 
 /**
- * Render the holdings table with all stocks for the selected portfolio.
- * @param {Array} stocks - Array of StockResponse objects from the API
+ * Render the holdings table for the selected portfolio.
+ * @param {Array}  stocks      - Array of StockResponse objects from the API
  * @param {number} portfolioId
  */
 function renderHoldingsTable(stocks, portfolioId) {
@@ -47,38 +47,44 @@ function buildStockRow(stock, portfolioId) {
                     <span class="stock-ticker">${escapeHTML(stock.symbol)}</span>
                 </div>
             </td>
-            <td>
+            <td class="num-col">
                 <span class="mono-cell">${formatNumber(stock.quantity)}</span>
             </td>
-            <td>
+            <td class="num-col hide-mobile">
                 <span class="mono-cell">${formatCurrency(stock.purchasePrice)}</span>
             </td>
-            <td>
+            <td class="num-col">
                 <span class="mono-cell">${formatCurrency(stock.currentPrice)}</span>
             </td>
-            <td>
+            <td class="num-col hide-mobile">
                 <span class="mono-cell">${formatCurrency(stock.currentValue)}</span>
             </td>
-            <td>
+            <td class="num-col hide-mobile">
                 <div class="pnl-cell">
                     <span class="pnl-amount ${pnlClass}">${formatCurrency(stock.profitLoss)}</span>
                 </div>
             </td>
-            <td>
+            <td class="num-col">
                 <span class="pnl-pct ${pnlClass}">${formatPercent(stock.profitLossPercentage)}</span>
             </td>
             <td>
                 <div class="row-actions">
                     <button
-                        class="btn btn-icon btn-icon-accent"
+                        class="btn-icon btn-icon-accent"
                         title="View price chart"
                         onclick="loadStockChart(${portfolioId}, ${stock.id}, '${escapeHTML(stock.symbol)}', '${escapeHTML(stock.name)}', 6)"
-                    >📊</button>
+                        aria-label="View chart for ${escapeHTML(stock.symbol)}"
+                    >
+                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                            <path d="M1 10l3.5-4 2.5 2.5L11 3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M1 12h11" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".4"/>
+                        </svg>
+                    </button>
                     <button
-                        class="btn btn-icon"
+                        class="btn-icon btn-icon-danger"
                         title="Remove stock"
-                        style="color:var(--danger)"
                         onclick="confirmDeleteStock(${portfolioId}, ${stock.id}, '${escapeHTML(stock.symbol)}')"
+                        aria-label="Remove ${escapeHTML(stock.symbol)}"
                     >
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                             <path d="M1 2.5h10M4.5 2.5V1.5h3v1M2 2.5l.75 8h6.5L10 2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -93,10 +99,11 @@ function buildStockRow(stock, portfolioId) {
 
 /**
  * Validate form inputs, call the API and refresh the portfolio view.
+ * NOTE: calls window.addStock_API to avoid collision with the function name.
  */
 async function addStock() {
-    const symbol       = document.getElementById('stockSymbol').value.trim().toUpperCase();
-    const quantity     = parseFloat(document.getElementById('stockQty').value);
+    const symbol        = document.getElementById('stockSymbol').value.trim().toUpperCase();
+    const quantity      = parseFloat(document.getElementById('stockQty').value);
     const purchasePrice = parseFloat(document.getElementById('stockPrice').value);
     const purchaseDate  = document.getElementById('stockDate').value;
 
@@ -106,19 +113,16 @@ async function addStock() {
         document.getElementById('stockSymbol').focus();
         return;
     }
-
     if (isNaN(quantity) || quantity <= 0) {
         showToast('Quantity must be greater than zero', 'error');
         document.getElementById('stockQty').focus();
         return;
     }
-
     if (isNaN(purchasePrice) || purchasePrice <= 0) {
         showToast('Purchase price must be greater than zero', 'error');
         document.getElementById('stockPrice').focus();
         return;
     }
-
     if (!purchaseDate) {
         showToast('Please select a purchase date', 'error');
         document.getElementById('stockDate').focus();
@@ -131,16 +135,16 @@ async function addStock() {
         return;
     }
 
-    setButtonLoading('addStockBtn', true, 'Adding...');
+    setButtonLoading('addStockBtn', true, 'Adding…');
 
     try {
-        await addStockAPI(portfolioId, symbol, quantity, purchasePrice, purchaseDate);
+        await window.addStock_API(portfolioId, symbol, quantity, purchasePrice, purchaseDate);
 
         // Clear inputs
         document.getElementById('stockSymbol').value = '';
-        document.getElementById('stockQty').value = '';
-        document.getElementById('stockPrice').value = '';
-        document.getElementById('stockDate').value = todayString();
+        document.getElementById('stockQty').value    = '';
+        document.getElementById('stockPrice').value  = '';
+        document.getElementById('stockDate').value   = todayString();
 
         showToast(`${symbol} added to portfolio`);
 

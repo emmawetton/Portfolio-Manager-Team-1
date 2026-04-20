@@ -45,7 +45,7 @@ const getAllPortfolios = () => request('GET', '/portfolios');
 const getPortfolioById = (id) => request('GET', `/portfolios/${id}`);
 
 /** Create a new portfolio */
-const createPortfolioAPI = (name, description) =>
+const createPortfolio = (name, description) =>
     request('POST', '/portfolios', { name, description });
 
 /** Update portfolio name and description */
@@ -66,7 +66,7 @@ const getStockById = (portfolioId, stockId) =>
     request('GET', `/portfolios/${portfolioId}/stocks/${stockId}`);
 
 /** Add a stock to a portfolio */
-const addStockAPI = (portfolioId, symbol, quantity, purchasePrice, purchaseDate) =>
+const addStock = (portfolioId, symbol, quantity, purchasePrice, purchaseDate) =>
     request('POST', `/portfolios/${portfolioId}/stocks`, {
         symbol,
         quantity,
