@@ -1,0 +1,271 @@
+### ===========================
+### PORTFOLIO ENDPOINTS
+### ===========================
+
+### Create a new portfolio
+### Expected: 201 Created
+### Returns: portfolio object with id, name, description, createdDate, numberOfStocks=0, totalValue=0
+POST http://localhost:8080/api/portfolios
+Content-Type: application/json
+
+{
+    "name": "Tech Stocks",
+    "description": "My technology investments"
+}
+
+###
+
+### Create a second portfolio
+### Expected: 201 Created
+### Returns: portfolio object with id=2
+POST http://localhost:8080/api/portfolios
+Content-Type: application/json
+
+{
+    "name": "Growth Stocks",
+    "description": "High growth investments"
+}
+
+###
+
+### Get all portfolios
+### Expected: 200 OK
+### Returns: list of all portfolios with live stock values and totals
+GET http://localhost:8080/api/portfolios
+
+###
+
+### Get one portfolio by id
+### Expected: 200 OK
+### Returns: single portfolio with all stocks and calculated totals
+GET http://localhost:8080/api/portfolios/1
+
+###
+
+### Get portfolio that does not exist
+### Expected: 404 Not Found
+### Returns: { "status": 404, "message": "Portfolio not found with id: 999" }
+GET http://localhost:8080/api/portfolios/999
+
+###
+
+### Update a portfolio
+### Expected: 200 OK
+### Returns: updated portfolio object with new name and description
+PUT http://localhost:8080/api/portfolios/1
+Content-Type: application/json
+
+{
+    "name": "Tech Giants",
+    "description": "Big tech investments"
+}
+
+###
+
+### Try to create portfolio with empty name
+### Expected: 400 Bad Request
+### Returns: { "status": 400, "message": "Portfolio name cannot be empty" }
+POST http://localhost:8080/api/portfolios
+Content-Type: application/json
+
+{
+    "name": "",
+    "description": "This should fail"
+}
+
+###
+
+### Delete a portfolio (also deletes all its stocks)
+### Expected: 204 No Content
+### Returns: empty response
+DELETE http://localhost:8080/api/portfolios/2
+
+###
+
+### ===========================
+### STOCK ENDPOINTS
+### ===========================
+
+### Add Apple stock to portfolio 1
+### Expected: 201 Created
+### Returns: stock object with live price data from 12 Data
+### Note: if AAPL already exists in portfolio 1 quantity will be added
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "AAPL",
+    "quantity": 10,
+    "purchasePrice": 189.50,
+    "purchaseDate": "2024-01-15"
+}
+
+###
+
+### Add Tesla stock to portfolio 1
+### Expected: 201 Created
+### Returns: stock object with live price data
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "TSLA",
+    "quantity": 5,
+    "purchasePrice": 220.00,
+    "purchaseDate": "2024-01-20"
+}
+
+###
+
+### Add Google stock to portfolio 1
+### Expected: 201 Created
+### Returns: stock object with live price data
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "GOOGL",
+    "quantity": 3,
+    "purchasePrice": 140.00,
+    "purchaseDate": "2024-02-01"
+}
+
+###
+
+### Try adding AAPL again to portfolio 1
+### Expected: 201 OK
+### Returns: existing AAPL stock with quantity increased (no duplicate created)
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "AAPL",
+    "quantity": 5,
+    "purchasePrice": 195.00,
+    "purchaseDate": "2024-03-01"
+}
+
+###
+
+### Get all stocks in portfolio 1
+### Expected: 200 OK
+### Returns: list of all stocks with live prices, profit/loss calculations
+GET http://localhost:8080/api/portfolios/1/stocks
+
+###
+
+### Get one stock by id
+### Expected: 200 OK
+### Returns: single stock with live price, current value, profit/loss
+GET http://localhost:8080/api/portfolios/1/stocks/1
+
+###
+
+### Get stock from wrong portfolio
+### Expected: 404 Not Found
+### Returns: { "status": 404, "message": "Stock does not belong to portfolio with id: 2" }
+GET http://localhost:8080/api/portfolios/2/stocks/1
+
+###
+
+### Get stock that does not exist
+### Expected: 404 Not Found
+### Returns: { "status": 404, "message": "Stock not found with id: 999" }
+GET http://localhost:8080/api/portfolios/1/stocks/999
+
+###
+
+### Update a stock quantity and purchase price
+### Expected: 200 OK
+### Returns: updated stock with recalculated profit/loss
+PUT http://localhost:8080/api/portfolios/1/stocks/1
+Content-Type: application/json
+
+{
+    "quantity": 15,
+    "purchasePrice": 189.50
+}
+
+###
+
+### Try to add stock with negative quantity
+### Expected: 400 Bad Request
+### Returns: { "status": 400, "message": "Quantity must be greater than zero" }
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "AMZN",
+    "quantity": -5,
+    "purchasePrice": 150.00,
+    "purchaseDate": "2024-01-15"
+}
+
+###
+
+### Try to add stock with empty symbol
+### Expected: 400 Bad Request
+### Returns: { "status": 400, "message": "Stock symbol cannot be empty" }
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "",
+    "quantity": 5,
+    "purchasePrice": 150.00,
+    "purchaseDate": "2024-01-15"
+}
+
+###
+
+### Try to add stock with invalid symbol
+### Expected: 400 Bad Request
+### Returns: { "status": 400, "message": "Could not fetch name for symbol: INVALID" }
+POST http://localhost:8080/api/portfolios/1/stocks
+Content-Type: application/json
+
+{
+    "symbol": "INVALID",
+    "quantity": 5,
+    "purchasePrice": 150.00,
+    "purchaseDate": "2024-01-15"
+}
+
+###
+
+### Delete a stock from portfolio
+### Expected: 204 No Content
+### Returns: empty response
+DELETE http://localhost:8080/api/portfolios/4
+
+###
+
+### ===========================
+### TREND ENDPOINTS
+### ===========================
+
+### Get stock trends - default 6 months
+### Expected: 200 OK
+### Returns: symbol, name and list of 6 monthly closing prices
+GET http://localhost:8080/api/portfolios/1/stocks/1/trends
+
+###
+
+### Get stock trends - 12 months
+### Expected: 200 OK
+### Returns: symbol, name and list of 12 monthly closing prices
+GET http://localhost:8080/api/portfolios/1/stocks/1/trends?months=12
+
+###
+
+### Get stock trends - 3 months
+### Expected: 200 OK
+### Returns: symbol, name and list of 3 monthly closing prices
+GET http://localhost:8080/api/portfolios/1/stocks/1/trends?months=3
+
+###
+
+### Get trends for stock that does not exist
+### Expected: 404 Not Found
+### Returns: { "status": 404, "message": "Stock not found with id: 999" }
+GET http://localhost:8080/api/portfolios/1/stocks/999/trends
